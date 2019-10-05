@@ -1,5 +1,5 @@
 import express from 'express'
-import compression from 'compression' // compresses requests
+import compression from 'compression'
 import session from 'express-session'
 import bodyParser from 'body-parser'
 import lusca from 'lusca'
@@ -10,33 +10,71 @@ import mongoose from 'mongoose'
 import passport from 'passport'
 import bluebird from 'bluebird'
 import {MONGODB_URI, SESSION_SECRET} from './util/secrets'
-
-import {ApolloServer, gql} from 'apollo-server-express'
-// Controllers (route handlers)
+import {ApolloServer, gql, makeExecutableSchema, PubSub} from 'apollo-server-express'
 import * as homeController from './controllers/home'
 import * as userController from './controllers/user'
 import * as apiController from './controllers/api'
 import * as contactController from './controllers/contact'
-// API keys and Passport configuration
 import * as passportConfig from './config/passport'
 import {UserChange} from './changeStreams'
 import {initializeWatchers} from './util/changeStreamWatcher'
-// Construct a schema, using GraphQL schema language
+import * as http from 'http'
+import errorHandler from 'errorhandler'
+
 const typeDefs = gql`
     type Query {
         hello: String
     }
+
+    type Subscription {
+        helloDispatched: String
+    }
+  
 `
+const pubsub = new PubSub() // graphql subscriptions
+const HELLO = 'HELLO'
 
 // Provide resolver functions for your schema fields
 const resolvers = {
   Query: {
-    hello: () => 'Hello world!',
+    hello: () => {
+      pubsub.publish(HELLO, "payload!")
+        .catch(console.log)
+      return 'Hello world!'
+    },
+  },
+  Subscription: {
+    helloDispatched: {
+      // Additional event labels can be passed to asyncIterator creation
+      subscribe: () => pubsub.asyncIterator([HELLO]),
+    },
   },
 }
 
-export const server = new ApolloServer({typeDefs, resolvers})
+const schema = makeExecutableSchema({
+  typeDefs,
+  resolvers
+})
 
+
+// export const server = new ApolloServer({typeDefs, resolvers})
+export const server = new ApolloServer({
+  schema,
+  context: async ({req, connection}) => {
+    if (connection) {
+      // check connection for metadata
+      return connection.context
+    } else {
+      // check from req
+      const token = req.headers.authorization || ''
+
+      return {token}
+    }
+  },
+  subscriptions: {
+    onConnect: () => {}
+  }
+})
 
 const MongoStore = mongo(session)
 
@@ -49,7 +87,7 @@ const mongoUrl = MONGODB_URI
 mongoose.Promise = bluebird
 
 // apollo
-server.applyMiddleware({app, path: '/apollo'})
+server.applyMiddleware({app, path: '/graphql'})
 
 mongoose.connect(mongoUrl, {useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true}).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
@@ -139,5 +177,10 @@ app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'p
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {failureRedirect: '/login'}), (req, res) => {
   res.redirect(req.session.returnTo || '/')
 })
+
+app.use(errorHandler());
+
+export const httpServer = http.createServer(app);
+server.installSubscriptionHandlers(httpServer);
 
 export default app
