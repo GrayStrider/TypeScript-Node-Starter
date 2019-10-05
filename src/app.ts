@@ -1,5 +1,5 @@
 import express from 'express'
-import compression from 'compression'  // compresses requests
+import compression from 'compression' // compresses requests
 import session from 'express-session'
 import bodyParser from 'body-parser'
 import lusca from 'lusca'
@@ -12,6 +12,15 @@ import bluebird from 'bluebird'
 import {MONGODB_URI, SESSION_SECRET} from './util/secrets'
 
 import {ApolloServer, gql} from 'apollo-server-express'
+// Controllers (route handlers)
+import * as homeController from './controllers/home'
+import * as userController from './controllers/user'
+import * as apiController from './controllers/api'
+import * as contactController from './controllers/contact'
+// API keys and Passport configuration
+import * as passportConfig from './config/passport'
+import {UserChange} from './changeStreams'
+import {initializeWatchers} from './util/changeStreamWatcher'
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
     type Query {
@@ -21,9 +30,9 @@ const typeDefs = gql`
 
 // Provide resolver functions for your schema fields
 const resolvers = {
-	Query: {
-		hello: () => 'Hello world!',
-	},
+  Query: {
+    hello: () => 'Hello world!',
+  },
 }
 
 export const server = new ApolloServer({typeDefs, resolvers})
@@ -31,15 +40,6 @@ export const server = new ApolloServer({typeDefs, resolvers})
 
 const MongoStore = mongo(session)
 
-// Controllers (route handlers)
-import * as homeController from './controllers/home'
-import * as userController from './controllers/user'
-import * as apiController from './controllers/api'
-import * as contactController from './controllers/contact'
-
-
-// API keys and Passport configuration
-import * as passportConfig from './config/passport'
 
 // Create Express server
 const app = express()
@@ -52,13 +52,12 @@ mongoose.Promise = bluebird
 server.applyMiddleware({app, path: '/apollo'})
 
 mongoose.connect(mongoUrl, {useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true}).then(
-	() => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
-	},
+  () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
+  },
 ).catch(err => {
-	console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err)
-	// process.exit();
+  console.log('MongoDB connection error. Please make sure MongoDB is running. ' + err)
+  // process.exit();
 })
-
 // Express configuration
 app.set('port', process.env.PORT || 3000)
 app.set('views', path.join(__dirname, '../views'))
@@ -67,13 +66,13 @@ app.use(compression())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 app.use(session({
-	resave: true,
-	saveUninitialized: true,
-	secret: SESSION_SECRET,
-	store: new MongoStore({
-		url: mongoUrl,
-		autoReconnect: true
-	})
+  resave: true,
+  saveUninitialized: true,
+  secret: SESSION_SECRET,
+  store: new MongoStore({
+    url: mongoUrl,
+    autoReconnect: true
+  })
 }))
 app.use(passport.initialize())
 app.use(passport.session())
@@ -81,27 +80,30 @@ app.use(flash())
 app.use(lusca.xframe('SAMEORIGIN'))
 app.use(lusca.xssProtection(true))
 app.use((req, res, next) => {
-	res.locals.user = req.user
-	next()
+  res.locals.user = req.user
+  next()
 })
 app.use((req, res, next) => {
-	// After successful login, redirect back to the intended page
-	if (!req.user &&
-		req.path !== '/login' &&
-		req.path !== '/signup' &&
-		!req.path.match(/^\/auth/) &&
-		!req.path.match(/\./)) {
-		req.session.returnTo = req.path
-	} else if (req.user &&
-		req.path == '/account') {
-		req.session.returnTo = req.path
-	}
-	next()
+  // After successful login, redirect back to the intended page
+  if (!req.user &&
+    req.path !== '/login' &&
+    req.path !== '/signup' &&
+    !req.path.match(/^\/auth/) &&
+    !req.path.match(/\./)) {
+    req.session.returnTo = req.path
+  } else if (req.user &&
+    req.path == '/account') {
+    req.session.returnTo = req.path
+  }
+  next()
 })
-
 app.use(
-	express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
+  express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
 )
+
+initializeWatchers([
+  UserChange
+])
 
 /**
  * Primary app routes.
@@ -135,7 +137,7 @@ app.get('/api/facebook', passportConfig.isAuthenticated, passportConfig.isAuthor
  */
 app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'public_profile']}))
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {failureRedirect: '/login'}), (req, res) => {
-	res.redirect(req.session.returnTo || '/')
+  res.redirect(req.session.returnTo || '/')
 })
 
 export default app
