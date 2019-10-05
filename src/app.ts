@@ -21,7 +21,7 @@ import {initializeWatchers} from './util/changeStreamWatcher'
 import * as http from 'http'
 import errorHandler from 'errorhandler'
 
-const typeDefs = gql`
+export const typeDefs = gql`
     type Query {
         hello: String
     }
@@ -29,22 +29,23 @@ const typeDefs = gql`
     type Subscription {
         helloDispatched: String
     }
-  
+
 `
-const pubsub = new PubSub() // graphql subscriptions
+export const pubsub = new PubSub() // graphql subscriptions
 const HELLO = 'HELLO'
 
 // Provide resolver functions for your schema fields
 const resolvers = {
   Query: {
     hello: () => {
-      pubsub.publish(HELLO, "payload!")
+      pubsub.publish(HELLO, 'query payload')
         .catch(console.log)
       return 'Hello world!'
     },
   },
   Subscription: {
     helloDispatched: {
+      resolve: (payload: unknown) => payload,
       // Additional event labels can be passed to asyncIterator creation
       subscribe: () => pubsub.asyncIterator([HELLO]),
     },
@@ -56,8 +57,6 @@ const schema = makeExecutableSchema({
   resolvers
 })
 
-
-// export const server = new ApolloServer({typeDefs, resolvers})
 export const server = new ApolloServer({
   schema,
   context: async ({req, connection}) => {
@@ -72,7 +71,7 @@ export const server = new ApolloServer({
     }
   },
   subscriptions: {
-    onConnect: () => {}
+    onConnect: () => console.log('Connected!')
   }
 })
 
@@ -178,9 +177,9 @@ app.get('/auth/facebook/callback', passport.authenticate('facebook', {failureRed
   res.redirect(req.session.returnTo || '/')
 })
 
-app.use(errorHandler());
+app.use(errorHandler())
 
-export const httpServer = http.createServer(app);
-server.installSubscriptionHandlers(httpServer);
+export const httpServer = http.createServer(app)
+server.installSubscriptionHandlers(httpServer)
 
 export default app
