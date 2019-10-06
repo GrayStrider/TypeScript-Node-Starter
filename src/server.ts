@@ -1,10 +1,8 @@
 import {httpServer, server} from './app'
-import {webSocket} from 'rxjs/webSocket'
+import {webSocket as rxWS} from 'rxjs/webSocket'
 import {map, mapTo, tap} from 'rxjs/internal/operators'
 import {interval, timer} from 'rxjs'
 import WebSocket from 'ws'
-
-// (global as any).WebSocket = require('ws')
 
 /**
  * Error Handler. Provides full stack - remove for production
@@ -27,11 +25,16 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Subscriptions ready at ws://localhost:${PORT}${server.subscriptionsPath}`)
 })
 
-// export const webSocketSubject = webSocket(`ws://localhost:3000/graphql`)
-//
-// webSocketSubject
-//   .subscribe(message => console.log('message received', message))
-//
+export const webSocketSubject = rxWS({
+  url: `ws://localhost:3001/`,
+  WebSocketCtor: require('ws'),
+  // to parse string messages
+  deserializer: e => e
+})
+
+webSocketSubject
+  .subscribe((message: MessageEvent) =>
+    console.log('message received via subscriber:', message.data))
 
 
 // const ws = new WebSocket(`ws://localhost:${PORT}${server.subscriptionsPath}`)
@@ -46,27 +49,31 @@ const wss = new WebSocket.Server({port: 3001})
 // });
 
 wss.on('connection', function connection(ws) {
-    ws.on('message', function incoming(data) {
-        console.log('logged from server', data)
-        wss.clients.forEach(function each(client) {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(data);
-            }
-        });
-    });
-});
+  ws.on('message', function incoming(data) {
+    console.log('logged from server "on message":', data)
+    wss.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(data)
+      }
+    })
+  })
+})
+
 
 const ws = new WebSocket(`ws://localhost:${3001}${'/'}`)
 
-ws.on('open', () => ws.send('WS DATA'))
+ws.on('open', () => ws.send('Hello from on'))
 
-interval(2000).pipe(
-  map(() => ws.send('WS DATA'))
+interval(5000).pipe(
+  map(() => {
+      console.log('clients connected:', wss.clients.size)
+      ws.send('Hello from interval')
+  })
 )
   .subscribe()
 
 ws.on('message', function incoming(data) {
-    console.log(data);
-});
+  console.log('logged from ws.on:', data)
+})
 
 export default httpServer
