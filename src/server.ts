@@ -18,9 +18,9 @@ const webSocketSubject = rxWS({
   deserializer: e => e
 })
 
-webSocketSubject
-  .subscribe((message: MessageEvent) =>
-    console.log('message received via subscriber:', message.data))
+// webSocketSubject
+//   .subscribe((message: MessageEvent) =>
+//     console.log('message received via subscriber:', message.data))
 
 
 const wss = new WebSocket.Server({ port: 3001 },
@@ -49,7 +49,7 @@ interval(5000).pipe(
     ws.send('Hello from interval')
   })
 )
-  .subscribe()
+  // .subscribe()
 
 ws.on('message', function incoming(data) {
   console.log('logged from ws.on:', data)
