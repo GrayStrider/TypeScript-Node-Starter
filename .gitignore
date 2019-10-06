@@ -39,4 +39,4 @@ dist/**/*
 
 # ignore yarn.lock
 yarn.lock
-!/src/schema.gql
+/src/schema.gql

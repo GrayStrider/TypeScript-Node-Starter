@@ -25,7 +25,8 @@ import { initializeWatchers } from './util/changeStreamWatcher'
 import * as http from 'http'
 import errorHandler from 'errorhandler'
 import { buildSchema } from 'type-graphql'
-import { RecipeResolver } from './modules/recipe-resolver'
+import { RecipeResolver } from './modules/recipe/recipe-resolver'
+import { TaskResolver } from './modules/task/task-resolver'
 
 // export const typeDefs = gql`
 //     #    type Query {
@@ -68,7 +69,7 @@ async function bootstrap() {
   // })
 
   const schema = await buildSchema({
-    resolvers: [RecipeResolver],
+    resolvers: [RecipeResolver, TaskResolver],
     // automatically create `schema.gql` file with schema definition in current folder
     emitSchemaFile: path.resolve(__dirname, 'schema.gql'),
   })
