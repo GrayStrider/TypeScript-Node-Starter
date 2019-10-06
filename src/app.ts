@@ -181,5 +181,12 @@ app.use(errorHandler())
 
 export const httpServer = http.createServer(app)
 server.installSubscriptionHandlers(httpServer)
+//
+// import {webSocket} from 'rxjs/webSocket'
+// import {PORT, webSocketSubject} from './server'
+// import {tap} from 'rxjs/internal/operators'
+
+
+
 
 export default app
