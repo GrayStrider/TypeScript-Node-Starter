@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { map } from 'rxjs/internal/operators'
 import { interval } from 'rxjs'
 import WebSocket from 'ws'
@@ -13,7 +14,7 @@ import mongoose from 'mongoose'
 import passport from 'passport'
 import bluebird from 'bluebird'
 import { MONGODB_URI, SESSION_SECRET } from './util/secrets'
-import { ApolloServer, gql, makeExecutableSchema, PubSub } from 'apollo-server-express'
+import { ApolloServer, PubSub } from 'apollo-server-express'
 import * as homeController from './controllers/home'
 import * as userController from './controllers/user'
 import * as apiController from './controllers/api'
@@ -23,17 +24,20 @@ import { UserChange } from './changeStreams'
 import { initializeWatchers } from './util/changeStreamWatcher'
 import * as http from 'http'
 import errorHandler from 'errorhandler'
+import { buildSchema } from 'type-graphql'
+import { RecipeResolver } from './modules/recipe-resolver'
 
-export const typeDefs = gql`
-    type Query {
-        hello: String
-    }
+// export const typeDefs = gql`
+//     #    type Query {
+//     #        hello: String
+//     #    }
+//     #
+//     #    type Subscription {
+//     #        helloDispatched: String
+//     #    }
+//
+// `
 
-    type Subscription {
-        helloDispatched: String
-    }
-
-`
 export const pubsub = new PubSub() // graphql subscriptions
 const HELLO = 'HELLO'
 
@@ -42,25 +46,31 @@ async function bootstrap() {
 
 // Provide resolver functions for your schema fields
   const resolvers = {
-    Query: {
-      hello: () => {
-        pubsub.publish(HELLO, 'query payload')
-          .catch(console.log)
-        return 'Hello world!'
-      },
-    },
-    Subscription: {
-      helloDispatched: {
-        resolve: (payload: unknown) => payload,
-        // Additional event labels can be passed to asyncIterator creation
-        subscribe: () => pubsub.asyncIterator([HELLO]),
-      },
-    },
+    // Query: {
+    //   hello: () => {
+    //     pubsub.publish(HELLO, 'query payload')
+    //       .catch(console.log)
+    //     return 'Hello world!'
+    //   },
+    // },
+    // Subscription: {
+    //   helloDispatched: {
+    //     resolve: (payload: unknown) => payload,
+    //     // Additional event labels can be passed to asyncIterator creation
+    //     subscribe: () => pubsub.asyncIterator([HELLO]),
+    //   },
+    // },
   }
 
-  const schema = makeExecutableSchema({
-    typeDefs,
-    resolvers
+  // const schema = makeExecutableSchema({
+  //   typeDefs,
+  //   resolvers
+  // })
+
+  const schema = await buildSchema({
+    resolvers: [RecipeResolver],
+    // automatically create `schema.gql` file with schema definition in current folder
+    emitSchemaFile: path.resolve(__dirname, 'schema.gql'),
   })
 
   const server = new ApolloServer({
