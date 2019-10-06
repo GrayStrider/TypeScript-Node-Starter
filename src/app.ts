@@ -9,15 +9,15 @@ import path from 'path'
 import mongoose from 'mongoose'
 import passport from 'passport'
 import bluebird from 'bluebird'
-import {MONGODB_URI, SESSION_SECRET} from './util/secrets'
-import {ApolloServer, gql, makeExecutableSchema, PubSub} from 'apollo-server-express'
+import { MONGODB_URI, SESSION_SECRET } from './util/secrets'
+import { ApolloServer, gql, makeExecutableSchema, PubSub } from 'apollo-server-express'
 import * as homeController from './controllers/home'
 import * as userController from './controllers/user'
 import * as apiController from './controllers/api'
 import * as contactController from './controllers/contact'
 import * as passportConfig from './config/passport'
-import {UserChange} from './changeStreams'
-import {initializeWatchers} from './util/changeStreamWatcher'
+import { UserChange } from './changeStreams'
+import { initializeWatchers } from './util/changeStreamWatcher'
 import * as http from 'http'
 import errorHandler from 'errorhandler'
 
@@ -59,7 +59,7 @@ const schema = makeExecutableSchema({
 
 export const server = new ApolloServer({
   schema,
-  context: async ({req, connection}) => {
+  context: async ({ req, connection }) => {
     if (connection) {
       // check connection for metadata
       return connection.context
@@ -67,7 +67,7 @@ export const server = new ApolloServer({
       // check from req
       const token = req.headers.authorization || ''
 
-      return {token}
+      return { token }
     }
   },
   subscriptions: {
@@ -86,9 +86,9 @@ const mongoUrl = MONGODB_URI
 mongoose.Promise = bluebird
 
 // apollo
-server.applyMiddleware({app, path: '/graphql'})
+server.applyMiddleware({ app, path: '/graphql' })
 
-mongoose.connect(mongoUrl, {useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true}).then(
+mongoose.connect(mongoUrl, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }).then(
   () => { /** ready to use. The `mongoose.connect()` promise resolves to undefined. */
   },
 ).catch(err => {
@@ -101,7 +101,7 @@ app.set('views', path.join(__dirname, '../views'))
 app.set('view engine', 'pug')
 app.use(compression())
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(session({
   resave: true,
   saveUninitialized: true,
@@ -135,7 +135,7 @@ app.use((req, res, next) => {
   next()
 })
 app.use(
-  express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
+  express.static(path.join(__dirname, 'public'), { maxAge: 31557600000 })
 )
 
 initializeWatchers([
@@ -172,8 +172,8 @@ app.get('/api/facebook', passportConfig.isAuthenticated, passportConfig.isAuthor
 /**
  * OAuth authentication routes. (Sign in)
  */
-app.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email', 'public_profile']}))
-app.get('/auth/facebook/callback', passport.authenticate('facebook', {failureRedirect: '/login'}), (req, res) => {
+app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email', 'public_profile'] }))
+app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
   res.redirect(req.session.returnTo || '/')
 })
 
@@ -181,12 +181,5 @@ app.use(errorHandler())
 
 export const httpServer = http.createServer(app)
 server.installSubscriptionHandlers(httpServer)
-//
-// import {webSocket} from 'rxjs/webSocket'
-// import {PORT, webSocketSubject} from './server'
-// import {tap} from 'rxjs/internal/operators'
-
-
-
 
 export default app

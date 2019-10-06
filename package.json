@@ -51,9 +51,11 @@
         "passport-facebook": "^3.0.0",
         "passport-local": "^1.0.0",
         "pug": "^2.0.4",
+        "reflect-metadata": "^0.1.13",
         "request": "^2.88.0",
         "request-promise": "^4.2.4",
         "rxjs": "^6.5.3",
+        "type-graphql": "^0.17.5",
         "winston": "^3.2.1",
         "ws": "^7.1.2"
     },
