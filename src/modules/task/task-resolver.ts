@@ -4,6 +4,7 @@ import { Max, Min } from 'class-validator'
 import { TaskInput } from './task-input'
 import { plainToClass } from 'class-transformer'
 import cuid from 'cuid'
+import { generateMockTask } from './util/generateMockTask'
 
 
 @ArgsType()
@@ -28,7 +29,16 @@ class GetTaskArgs {
 
 @Resolver(of => Task)
 export class TaskResolver {
-  private taskCollection: Task[] = []
+  private taskCollection: Task[] = /*createTaskSamples(10)*/[]
+
+  @Mutation(returns => [Task])
+  async generateTaskSamples(@Arg('amount') amount: number) {
+
+    for (let i = 0; i < amount; i++) await this.taskCollection.push(generateMockTask())
+
+    return this.taskCollection
+  }
+
 
   @Query(returns => [Task])
   async tasks() { // no await, since not a promise
