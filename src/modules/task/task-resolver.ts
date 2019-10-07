@@ -1,5 +1,5 @@
 import { Arg, Args, ArgsType, Field, Int, Mutation, Query, Resolver } from 'type-graphql'
-import { Task } from './task-type'
+import { ITask, Task } from './task-type'
 import { Max, Min } from 'class-validator'
 import { TaskInput } from './task-input'
 import { plainToClass } from 'class-transformer'
@@ -49,11 +49,11 @@ export class TaskResolver {
   @Mutation(returns => Task)
   async addTask(@Arg('task') { description, title }: TaskInput) {
 
-    // --- props interface!!!
-    const task = plainToClass(Task, {
+    const task = plainToClass<Task, ITask>(Task, {
         title: title,
         description: description,
-        dateCreated: new Date()
+        dateCreated: new Date(),
+
       },
     )
 

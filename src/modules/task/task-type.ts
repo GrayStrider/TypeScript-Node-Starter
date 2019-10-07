@@ -17,8 +17,21 @@ registerEnumType(Tag, {
   description: 'Task Tags'
 })
 
+export interface ITask {
+  id?: string
+  title?: string
+  description?: string
+  tags?: Tag
+  priority?: Priorities
+  dateCreated: Date
+  dateModified?: Date
+  numberArr?: number[]
+  optionalNullable?: number
+
+}
+
 @ObjectType()
-export class Task {
+export class Task implements ITask {
   internal: number // hidden from GraphQL, no decorator
 
   @Field(returns => ID, { nullable: true })
@@ -31,13 +44,14 @@ export class Task {
   tags?: Tag
   @Field({ defaultValue: Priorities.NONE, nullable: true })
   priority?: Priorities
-  @Field({ nullable: true })
-  dateCreated?: Date
+  @Field(returns => Date)
+  dateCreated: Date
   @Field({ nullable: true })
   dateModified?: Date
 
   @Field(returns => [Int], { nullable: true })
   numberArr?: number[]
+
   @Field(() => Int, { nullable: true })
   optionalNullable?: number
 
