@@ -253,4 +253,4 @@ async function bootstrap() {
 }
 
 bootstrap()
-  .catch(console.error)
+  .catch(/*(reason: Error) => reason.message || reason*/)

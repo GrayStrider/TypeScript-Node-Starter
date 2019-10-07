@@ -1,8 +1,9 @@
 import { Arg, Args, ArgsType, Field, Int, Mutation, Query, Resolver } from 'type-graphql'
-import { ITask, Task } from './task-type'
+import { ITask, Priority, Task } from './task-type'
 import { Max, Min } from 'class-validator'
 import { TaskInput } from './task-input'
 import { plainToClass } from 'class-transformer'
+import cuid from 'cuid'
 
 
 @ArgsType()
@@ -47,11 +48,14 @@ export class TaskResolver {
 
 
   @Mutation(returns => Task)
-  async addTask(@Arg('task') { description, title }: TaskInput) {
+  async addTask(@Arg('task') { description, title, priority, tags }: TaskInput) {
 
     const task = plainToClass<Task, ITask>(Task, {
+        id: cuid(),
+        tags: tags || [],
+        priority: priority || Priority.NONE,
         title: title,
-        description: description,
+        description: description || '',
         dateCreated: new Date(),
 
       },
