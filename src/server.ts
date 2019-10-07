@@ -89,7 +89,9 @@ async function bootstrap() {
     },
     subscriptions: {
       onConnect: () => console.log('Connected!')
-    }
+    },
+
+    tracing: true
   })
 
   const MongoStore = mongo(session)
